@@ -1,39 +1,60 @@
 --[[
-    Misty Dany Hub — Version Selector
-    Beautiful launcher to pick a version or close.
+    Misty Dany Hub — Adaptive Version Selector
+    Works on PC & Mobile. Closes after version is picked.
 ]]
 
 local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting         = game:GetService("Lighting")
+local CoreGui          = game:GetService("CoreGui")
 
 -- CONFIG --------------------------------------------------------------------
 local CONFIG = {
     Title    = "MISTY DANY",
     Subtitle = "Blood Zone • Version Selector",
     Versions = {
-        { label = "Version 1",        sub = "Classic interface • Legacy build",     tag = "LEGACY", accent = Color3.fromRGB(150,150,170),
+        { label = "Version 1",        sub = "Classic interface • Legacy build",  tag = "LEGACY", accent = Color3.fromRGB(150,150,170),
           url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20V1.txt" },
-        { label = "Version 2",        sub = "Classic interface • Improved",          tag = "LEGACY", accent = Color3.fromRGB(150,150,170),
+        { label = "Version 2",        sub = "Classic interface • Improved",       tag = "LEGACY", accent = Color3.fromRGB(150,150,170),
           url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20V2.txt" },
-        { label = "Version 8",        sub = "New GUI • Desktop",                     tag = "STABLE", accent = Color3.fromRGB(220, 60, 90),
+        { label = "Version 8",        sub = "New GUI • Most stable build",        tag = "STABLE", accent = Color3.fromRGB(220, 60, 90),
           url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20V8.txt" },
-        { label = "Version 8 Mobile", sub = "New GUI • Optimized for phones",        tag = "MOBILE", accent = Color3.fromRGB(80, 140, 220),
+        { label = "Version 8 Mobile", sub = "New GUI • Optimized for phones",    tag = "MOBILE", accent = Color3.fromRGB(80, 140, 220),
           url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20Phone%20V8.txt" },
-        { label = "Version 9",        sub = "New GUI • Latest release",              tag = "NEW",    accent = Color3.fromRGB(230, 80, 140),
+        { label = "Version 9",        sub = "New GUI • Latest release",           tag = "NEW",    accent = Color3.fromRGB(230, 80, 140),
           url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20Phone%20V8.txt" },
     },
 }
 
 -- CLEANUP -------------------------------------------------------------------
-local CoreGui = game:GetService("CoreGui")
 pcall(function()
     local old = CoreGui:FindFirstChild("MistyDanySelector")
     if old then old:Destroy() end
-    local old2 = Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("MistyDanySelector")
+    local pg = Players.LocalPlayer:FindFirstChild("PlayerGui")
+    local old2 = pg and pg:FindFirstChild("MistyDanySelector")
     if old2 then old2:Destroy() end
 end)
+
+-- ADAPTIVE SETUP ------------------------------------------------------------
+local cam    = workspace.CurrentCamera
+local vp     = cam.ViewportSize
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local minSide  = math.min(vp.X, vp.Y)
+
+-- Window size: не выходит за экран, но не меньше удобного минимума
+local winW = math.clamp(math.floor(vp.X * 0.90), 300, 560)
+local winH = math.clamp(math.floor(vp.Y * 0.82), 360, 520)
+
+-- Масштаб элементов: на маленьком экране чуть меньше шрифты/высоты
+local scale  = math.clamp(minSide / 600, 0.82, 1)
+local cardH  = math.floor(78 * scale + (isMobile and 8 or 0)) -- чуть больше на мобиле
+local titleSize    = math.floor(34 * scale)
+local subtitleSize = math.floor(13 * scale)
+local nameSize     = math.floor(19 * scale)
+local descSize     = math.floor(13 * scale)
+local closeSize    = isMobile and 44 or 36
+local pad          = isMobile and 18 or 16
 
 -- GUI ROOT ------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
@@ -42,160 +63,162 @@ ScreenGui.ResetOnSpawn   = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.DisplayOrder   = 999999
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-local parented = pcall(function() ScreenGui.Parent = CoreGui end)
-if not parented or not ScreenGui.Parent then
+
+local ok = pcall(function() ScreenGui.Parent = CoreGui end)
+if not ok or not ScreenGui.Parent then
     ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- BACKGROUND BLUR -----------------------------------------------------------
+-- BLUR ----------------------------------------------------------------------
 local blur = Instance.new("BlurEffect")
-blur.Size     = 0
-blur.Parent   = Lighting
+blur.Size   = 0
+blur.Parent = Lighting
 TweenService:Create(blur, TweenInfo.new(0.4), { Size = 16 }):Play()
 
--- DARK OVERLAY --------------------------------------------------------------
+-- OVERLAY -------------------------------------------------------------------
 local Overlay = Instance.new("Frame")
-Overlay.Size                = UDim2.fromScale(1, 1)
-Overlay.BackgroundColor3    = Color3.fromRGB(0, 0, 0)
+Overlay.Size                   = UDim2.fromScale(1, 1)
+Overlay.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
 Overlay.BackgroundTransparency = 0.4
-Overlay.BorderSizePixel     = 0
-Overlay.Parent              = ScreenGui
+Overlay.BorderSizePixel        = 0
+Overlay.Parent                 = ScreenGui
 
--- MAIN WINDOW ---------------------------------------------------------------
+-- MAIN ----------------------------------------------------------------------
 local Main = Instance.new("Frame")
-Main.AnchorPoint       = Vector2.new(0.5, 0.5)
-Main.Position          = UDim2.fromScale(0.5, 0.5)
-Main.Size              = UDim2.fromOffset(0, 0) -- will be animated
-Main.BackgroundColor3  = Color3.fromRGB(18, 12, 20)
-Main.BorderSizePixel   = 0
-Main.ClipsDescendants  = false
-Main.Parent            = ScreenGui
+Main.AnchorPoint      = Vector2.new(0.5, 0.5)
+Main.Position         = UDim2.fromScale(0.5, 0.5)
+Main.Size             = UDim2.fromOffset(0, 0)
+Main.BackgroundColor3 = Color3.fromRGB(18, 12, 20)
+Main.BorderSizePixel  = 0
+Main.ClipsDescendants = false
+Main.Parent           = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 16)
-MainCorner.Parent = Main
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color         = Color3.fromRGB(200, 40, 70)
-MainStroke.Thickness     = 1.5
-MainStroke.Transparency  = 0.5
-MainStroke.Parent        = Main
-
-local MainGrad = Instance.new("UIGradient")
-MainGrad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 18, 32)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 6, 14)),
-}
-MainGrad.Rotation = 90
-MainGrad.Parent   = Main
+local MainCorner = Instance.new("UICorner"); MainCorner.CornerRadius = UDim.new(0, 16); MainCorner.Parent = Main
+local MainStroke = Instance.new("UIStroke"); MainStroke.Color = Color3.fromRGB(200,40,70); MainStroke.Thickness = 1.5; MainStroke.Transparency = 0.5; MainStroke.Parent = Main
+local MainGrad   = Instance.new("UIGradient"); MainGrad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30,18,32)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(12,6,14)),
+}; MainGrad.Rotation = 90; MainGrad.Parent = Main
 
 -- HEADER --------------------------------------------------------------------
+local headerH = math.floor(92 * scale)
+
 local Header = Instance.new("Frame")
-Header.Size               = UDim2.new(1, 0, 0, 92)
+Header.Size                   = UDim2.new(1, 0, 0, headerH)
 Header.BackgroundTransparency = 1
-Header.Parent             = Main
+Header.Parent                 = Main
 
 local Title = Instance.new("TextLabel")
 Title.Text              = CONFIG.Title
 Title.Font              = Enum.Font.GothamBlack
-Title.TextSize          = 34
+Title.TextSize          = titleSize
 Title.TextColor3        = Color3.fromRGB(255, 255, 255)
 Title.BackgroundTransparency = 1
-Title.Position          = UDim2.fromOffset(26, 20)
-Title.Size              = UDim2.new(1, -140, 0, 38)
+Title.Position          = UDim2.fromOffset(pad + 10, 16)
+Title.Size              = UDim2.new(1, -(closeSize + 40), 0, math.floor(38 * scale))
 Title.TextXAlignment    = Enum.TextXAlignment.Left
 Title.Parent            = Header
 
 local TitleGrad = Instance.new("UIGradient")
 TitleGrad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 210, 230)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 50, 90)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,210,230)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(220,50,90)),
 }
 TitleGrad.Parent = Title
 
 local Subtitle = Instance.new("TextLabel")
 Subtitle.Text              = CONFIG.Subtitle
 Subtitle.Font              = Enum.Font.Gotham
-Subtitle.TextSize          = 13
+Subtitle.TextSize          = subtitleSize
 Subtitle.TextColor3        = Color3.fromRGB(170, 150, 175)
 Subtitle.BackgroundTransparency = 1
-Subtitle.Position          = UDim2.fromOffset(28, 58)
-Subtitle.Size              = UDim2.new(1, -140, 0, 20)
+Subtitle.Position          = UDim2.fromOffset(pad + 12, math.floor(56 * scale))
+Subtitle.Size              = UDim2.new(1, -(closeSize + 40), 0, math.floor(20 * scale))
 Subtitle.TextXAlignment    = Enum.TextXAlignment.Left
 Subtitle.Parent            = Header
 
 -- CLOSE BUTTON --------------------------------------------------------------
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size               = UDim2.fromOffset(36, 36)
-CloseBtn.Position           = UDim2.new(1, -52, 0, 22)
+CloseBtn.Size               = UDim2.fromOffset(closeSize, closeSize)
+CloseBtn.Position           = UDim2.new(1, -(closeSize + 14), 0, 20)
 CloseBtn.BackgroundColor3   = Color3.fromRGB(46, 22, 32)
 CloseBtn.Text               = "×"
 CloseBtn.Font               = Enum.Font.GothamBold
-CloseBtn.TextSize           = 24
+CloseBtn.TextSize           = math.floor(24 * scale)
 CloseBtn.TextColor3         = Color3.fromRGB(255, 150, 175)
 CloseBtn.AutoButtonColor    = false
 CloseBtn.Parent             = Header
 local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 9); cc.Parent = CloseBtn
-local cs = Instance.new("UIStroke"); cs.Color = Color3.fromRGB(140, 40, 70); cs.Transparency = 0.4; cs.Parent = CloseBtn
+local cs = Instance.new("UIStroke"); cs.Color = Color3.fromRGB(140,40,70); cs.Transparency = 0.4; cs.Parent = CloseBtn
 
 CloseBtn.MouseEnter:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(200, 40, 70) }):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(200,40,70) }):Play()
     TweenService:Create(CloseBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255,255,255) }):Play()
 end)
 CloseBtn.MouseLeave:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(46, 22, 32) }):Play()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255, 150, 175) }):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(46,22,32) }):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255,150,175) }):Play()
 end)
 
 -- LIST ----------------------------------------------------------------------
 local List = Instance.new("ScrollingFrame")
-List.Size                  = UDim2.new(1, -32, 1, -140)
-List.Position              = UDim2.fromOffset(16, 92)
+List.Size                   = UDim2.new(1, -(pad*2), 1, -(headerH + 44))
+List.Position               = UDim2.fromOffset(pad, headerH)
 List.BackgroundTransparency = 1
-List.BorderSizePixel       = 0
-List.ScrollBarThickness    = 4
-List.ScrollBarImageColor3  = Color3.fromRGB(200, 40, 70)
-List.CanvasSize            = UDim2.new(0, 0, 0, 0)
-List.AutomaticCanvasSize   = Enum.AutomaticSize.Y
-List.Parent                = Main
+List.BorderSizePixel        = 0
+List.ScrollBarThickness     = isMobile and 6 or 4
+List.ScrollBarImageColor3   = Color3.fromRGB(200,40,70)
+List.CanvasSize             = UDim2.new(0, 0, 0, 0)
+List.AutomaticCanvasSize    = Enum.AutomaticSize.Y
+List.ScrollingDirection     = Enum.ScrollingDirection.Y
+List.Parent                 = Main
 
 local LL = Instance.new("UIListLayout")
-LL.Padding    = UDim.new(0, 10)
-LL.SortOrder  = Enum.SortOrder.LayoutOrder
-LL.Parent     = List
+LL.Padding   = UDim.new(0, 10)
+LL.SortOrder = Enum.SortOrder.LayoutOrder
+LL.Parent    = List
 
 -- FOOTER --------------------------------------------------------------------
 local Footer = Instance.new("TextLabel")
 Footer.Text              = "⚠ Not verified by rscripts.net — use at your own risk"
 Footer.Font              = Enum.Font.Gotham
-Footer.TextSize          = 11
+Footer.TextSize          = math.floor(11 * scale)
 Footer.TextColor3        = Color3.fromRGB(120, 100, 125)
 Footer.BackgroundTransparency = 1
-Footer.Position          = UDim2.new(0, 0, 1, -30)
+Footer.Position          = UDim2.new(0, 0, 1, -28)
 Footer.Size              = UDim2.new(1, 0, 0, 18)
 Footer.Parent            = Main
 
 -- HELPERS -------------------------------------------------------------------
-local closed = false
+local closed  = false
 local loading = false
 
 local function closeHub()
     if closed then return end
     closed = true
-    TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-        { Size = UDim2.fromOffset(380, 260), BackgroundTransparency = 1 }):Play()
-    TweenService:Create(MainStroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
-    TweenService:Create(Overlay, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
-    TweenService:Create(blur, TweenInfo.new(0.25), { Size = 0 }):Play()
-    task.delay(0.3, function()
+    TweenService:Create(Main, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        { Size = UDim2.fromOffset(winW * 0.7, winH * 0.5), BackgroundTransparency = 1 }):Play()
+    TweenService:Create(MainStroke, TweenInfo.new(0.22), { Transparency = 1 }):Play()
+    TweenService:Create(Overlay, TweenInfo.new(0.22), { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(blur, TweenInfo.new(0.22), { Size = 0 }):Play()
+    task.delay(0.28, function()
         blur:Destroy()
         ScreenGui:Destroy()
     end)
 end
 
 CloseBtn.MouseButton1Click:Connect(closeHub)
+CloseBtn.TouchTap:Connect(closeHub) -- для надёжности на мобиле
 
--- DRAG ----------------------------------------------------------------------
+-- Escape on PC
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.Escape and not closed then
+        closeHub()
+    end
+end)
+
+-- DRAG (mouse + touch) ------------------------------------------------------
 local dragging, dragInput, dragStart, startPos
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -226,23 +249,22 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- CARD FACTORY --------------------------------------------------------------
+-- CARD ----------------------------------------------------------------------
 local function createCard(info, order)
     local Card = Instance.new("Frame")
-    Card.Size              = UDim2.new(1, -6, 0, 78)
-    Card.BackgroundColor3  = Color3.fromRGB(30, 21, 36)
-    Card.BorderSizePixel   = 0
-    Card.LayoutOrder       = order
-    Card.Parent            = List
+    Card.Size             = UDim2.new(1, -6, 0, cardH)
+    Card.BackgroundColor3 = Color3.fromRGB(30, 21, 36)
+    Card.BorderSizePixel  = 0
+    Card.LayoutOrder      = order
+    Card.Parent           = List
     local cc2 = Instance.new("UICorner"); cc2.CornerRadius = UDim.new(0, 12); cc2.Parent = Card
 
     local CardStroke = Instance.new("UIStroke")
-    CardStroke.Color         = Color3.fromRGB(80, 50, 70)
-    CardStroke.Thickness     = 1
-    CardStroke.Transparency  = 0.4
-    CardStroke.Parent        = Card
+    CardStroke.Color        = Color3.fromRGB(80, 50, 70)
+    CardStroke.Thickness    = 1
+    CardStroke.Transparency = 0.4
+    CardStroke.Parent       = Card
 
-    -- Accent bar
     local Accent = Instance.new("Frame")
     Accent.Size             = UDim2.new(0, 4, 1, -20)
     Accent.Position         = UDim2.fromOffset(10, 10)
@@ -251,58 +273,54 @@ local function createCard(info, order)
     Accent.Parent           = Card
     local ac = Instance.new("UICorner"); ac.CornerRadius = UDim.new(1, 0); ac.Parent = Accent
 
-    -- Name
     local Name = Instance.new("TextLabel")
     Name.Text              = info.label
     Name.Font              = Enum.Font.GothamBold
-    Name.TextSize          = 19
+    Name.TextSize          = nameSize
     Name.TextColor3        = Color3.fromRGB(250, 240, 250)
     Name.BackgroundTransparency = 1
     Name.TextXAlignment    = Enum.TextXAlignment.Left
-    Name.Position          = UDim2.fromOffset(26, 14)
-    Name.Size              = UDim2.new(0.65, 0, 0, 24)
+    Name.Position          = UDim2.fromOffset(26, math.floor(cardH * 0.18))
+    Name.Size              = UDim2.new(0.62, 0, 0, math.floor(24 * scale))
     Name.Parent            = Card
 
-    -- Description
     local Desc = Instance.new("TextLabel")
     Desc.Text              = info.sub
     Desc.Font              = Enum.Font.Gotham
-    Desc.TextSize          = 13
+    Desc.TextSize          = descSize
     Desc.TextColor3        = Color3.fromRGB(155, 135, 160)
     Desc.BackgroundTransparency = 1
     Desc.TextXAlignment    = Enum.TextXAlignment.Left
-    Desc.Position          = UDim2.fromOffset(26, 42)
-    Desc.Size              = UDim2.new(0.65, 0, 0, 20)
+    Desc.Position          = UDim2.fromOffset(26, math.floor(cardH * 0.54))
+    Desc.Size              = UDim2.new(0.62, 0, 0, math.floor(20 * scale))
     Desc.Parent            = Card
 
-    -- Tag badge
     local Tag = Instance.new("Frame")
-    Tag.Size                = UDim2.fromOffset(78, 24)
-    Tag.Position            = UDim2.new(1, -90, 0.5, -12)
-    Tag.BackgroundColor3    = info.accent
+    Tag.Size                   = UDim2.fromOffset(78, math.floor(24 * scale))
+    Tag.Position               = UDim2.new(1, -90, 0.5, -math.floor(12 * scale))
+    Tag.BackgroundColor3       = info.accent
     Tag.BackgroundTransparency = 0.85
-    Tag.BorderSizePixel     = 0
-    Tag.Parent              = Card
+    Tag.BorderSizePixel        = 0
+    Tag.Parent                 = Card
     local tcg = Instance.new("UICorner"); tcg.CornerRadius = UDim.new(0, 6); tcg.Parent = Tag
     local ts  = Instance.new("UIStroke"); ts.Color = info.accent; ts.Transparency = 0.4; ts.Parent = Tag
     local TagLabel = Instance.new("TextLabel")
     TagLabel.Text              = info.tag
     TagLabel.Font              = Enum.Font.GothamBold
-    TagLabel.TextSize          = 11
+    TagLabel.TextSize          = math.floor(11 * scale)
     TagLabel.TextColor3        = info.accent
     TagLabel.BackgroundTransparency = 1
     TagLabel.Size              = UDim2.fromScale(1, 1)
     TagLabel.Parent            = Tag
 
-    -- Click layer
     local Btn = Instance.new("TextButton")
-    Btn.Size               = UDim2.fromScale(1, 1)
+    Btn.Size                   = UDim2.fromScale(1, 1)
     Btn.BackgroundTransparency = 1
-    Btn.Text               = ""
-    Btn.AutoButtonColor    = false
-    Btn.Parent             = Card
+    Btn.Text                   = ""
+    Btn.AutoButtonColor        = false
+    Btn.Parent                 = Card
 
-    -- Hover
+    -- Hover (PC)
     Btn.MouseEnter:Connect(function()
         TweenService:Create(Card, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(48, 30, 56) }):Play()
         TweenService:Create(CardStroke, TweenInfo.new(0.15), { Color = info.accent, Transparency = 0 }):Play()
@@ -312,23 +330,37 @@ local function createCard(info, order)
         TweenService:Create(CardStroke, TweenInfo.new(0.15), { Color = Color3.fromRGB(80, 50, 70), Transparency = 0.4 }):Play()
     end)
 
-    -- Click → launch
+    -- Touch feedback (mobile) — вспышка при касании
+    Btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            TweenService:Create(Card, TweenInfo.new(0.08), { BackgroundColor3 = Color3.fromRGB(60, 34, 66) }):Play()
+            TweenService:Create(CardStroke, TweenInfo.new(0.08), { Color = info.accent, Transparency = 0 }):Play()
+        end
+    end)
+    Btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            TweenService:Create(Card, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(30, 21, 36) }):Play()
+            TweenService:Create(CardStroke, TweenInfo.new(0.2), { Color = Color3.fromRGB(80, 50, 70), Transparency = 0.4 }):Play()
+        end
+    end)
+
+    -- Launch
     Btn.MouseButton1Click:Connect(function()
         if loading or closed then return end
         loading = true
-        Name.Text        = "▶ Launching " .. info.label .. "..."
-        Name.TextColor3  = info.accent
+        Name.Text       = "▶ Launching " .. info.label .. "..."
+        Name.TextColor3 = info.accent
         TweenService:Create(CardStroke, TweenInfo.new(0.2), { Color = info.accent, Transparency = 0 }):Play()
         TweenService:Create(Card, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(60, 34, 66) }):Play()
 
-        task.wait(0.4)
-        closeHub()
         task.wait(0.35)
+        closeHub()
+        task.wait(0.32)
 
-        local ok, err = pcall(function()
+        local success, err = pcall(function()
             loadstring(game:HttpGet(info.url))()
         end)
-        if not ok then
+        if not success then
             warn("[Misty Dany Hub] Failed to load " .. info.label .. ": " .. tostring(err))
         end
     end)
@@ -343,8 +375,21 @@ end
 
 -- INTRO ANIMATION -----------------------------------------------------------
 TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-    { Size = UDim2.fromOffset(560, 520) }):Play()
+    { Size = UDim2.fromOffset(winW, winH) }):Play()
 
 task.delay(0.05, function()
     TweenService:Create(MainStroke, TweenInfo.new(0.6), { Transparency = 0.15 }):Play()
+end)
+
+-- RESPONSIVE (rotation / resize) --------------------------------------------
+local lastVp = vp
+cam:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+    local nvp = cam.ViewportSize
+    if nvp == lastVp then return end
+    lastVp = nvp
+    if closed then return end
+
+    local newW = math.clamp(math.floor(nvp.X * 0.90), 300, 560)
+    local newH = math.clamp(math.floor(nvp.Y * 0.82), 360, 520)
+    TweenService:Create(Main, TweenInfo.new(0.25), { Size = UDim2.fromOffset(newW, newH) }):Play()
 end)
