@@ -1,0 +1,350 @@
+--[[
+    Misty Dany Hub — Version Selector
+    Beautiful launcher to pick a version or close.
+]]
+
+local Players          = game:GetService("Players")
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting         = game:GetService("Lighting")
+
+-- CONFIG --------------------------------------------------------------------
+local CONFIG = {
+    Title    = "MISTY DANY",
+    Subtitle = "Blood Zone • Version Selector",
+    Versions = {
+        { label = "Version 1",        sub = "Classic interface • Legacy build",     tag = "LEGACY", accent = Color3.fromRGB(150,150,170),
+          url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20V1.txt" },
+        { label = "Version 2",        sub = "Classic interface • Improved",          tag = "LEGACY", accent = Color3.fromRGB(150,150,170),
+          url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20V2.txt" },
+        { label = "Version 8",        sub = "New GUI • Desktop",                     tag = "STABLE", accent = Color3.fromRGB(220, 60, 90),
+          url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20V8.txt" },
+        { label = "Version 8 Mobile", sub = "New GUI • Optimized for phones",        tag = "MOBILE", accent = Color3.fromRGB(80, 140, 220),
+          url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20Phone%20V8.txt" },
+        { label = "Version 9",        sub = "New GUI • Latest release",              tag = "NEW",    accent = Color3.fromRGB(230, 80, 140),
+          url = "https://raw.githubusercontent.com/lorcevinfinlog-dot/Project_Misty/refs/heads/main/The%20Blood%20Zone/Misty_Dany%20Hub-Blood%20Zone%20Phone%20V8.txt" },
+    },
+}
+
+-- CLEANUP -------------------------------------------------------------------
+local CoreGui = game:GetService("CoreGui")
+pcall(function()
+    local old = CoreGui:FindFirstChild("MistyDanySelector")
+    if old then old:Destroy() end
+    local old2 = Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("MistyDanySelector")
+    if old2 then old2:Destroy() end
+end)
+
+-- GUI ROOT ------------------------------------------------------------------
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name           = "MistyDanySelector"
+ScreenGui.ResetOnSpawn   = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder   = 999999
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local parented = pcall(function() ScreenGui.Parent = CoreGui end)
+if not parented or not ScreenGui.Parent then
+    ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- BACKGROUND BLUR -----------------------------------------------------------
+local blur = Instance.new("BlurEffect")
+blur.Size     = 0
+blur.Parent   = Lighting
+TweenService:Create(blur, TweenInfo.new(0.4), { Size = 16 }):Play()
+
+-- DARK OVERLAY --------------------------------------------------------------
+local Overlay = Instance.new("Frame")
+Overlay.Size                = UDim2.fromScale(1, 1)
+Overlay.BackgroundColor3    = Color3.fromRGB(0, 0, 0)
+Overlay.BackgroundTransparency = 0.4
+Overlay.BorderSizePixel     = 0
+Overlay.Parent              = ScreenGui
+
+-- MAIN WINDOW ---------------------------------------------------------------
+local Main = Instance.new("Frame")
+Main.AnchorPoint       = Vector2.new(0.5, 0.5)
+Main.Position          = UDim2.fromScale(0.5, 0.5)
+Main.Size              = UDim2.fromOffset(0, 0) -- will be animated
+Main.BackgroundColor3  = Color3.fromRGB(18, 12, 20)
+Main.BorderSizePixel   = 0
+Main.ClipsDescendants  = false
+Main.Parent            = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.Parent = Main
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color         = Color3.fromRGB(200, 40, 70)
+MainStroke.Thickness     = 1.5
+MainStroke.Transparency  = 0.5
+MainStroke.Parent        = Main
+
+local MainGrad = Instance.new("UIGradient")
+MainGrad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 18, 32)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 6, 14)),
+}
+MainGrad.Rotation = 90
+MainGrad.Parent   = Main
+
+-- HEADER --------------------------------------------------------------------
+local Header = Instance.new("Frame")
+Header.Size               = UDim2.new(1, 0, 0, 92)
+Header.BackgroundTransparency = 1
+Header.Parent             = Main
+
+local Title = Instance.new("TextLabel")
+Title.Text              = CONFIG.Title
+Title.Font              = Enum.Font.GothamBlack
+Title.TextSize          = 34
+Title.TextColor3        = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1
+Title.Position          = UDim2.fromOffset(26, 20)
+Title.Size              = UDim2.new(1, -140, 0, 38)
+Title.TextXAlignment    = Enum.TextXAlignment.Left
+Title.Parent            = Header
+
+local TitleGrad = Instance.new("UIGradient")
+TitleGrad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 210, 230)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 50, 90)),
+}
+TitleGrad.Parent = Title
+
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Text              = CONFIG.Subtitle
+Subtitle.Font              = Enum.Font.Gotham
+Subtitle.TextSize          = 13
+Subtitle.TextColor3        = Color3.fromRGB(170, 150, 175)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Position          = UDim2.fromOffset(28, 58)
+Subtitle.Size              = UDim2.new(1, -140, 0, 20)
+Subtitle.TextXAlignment    = Enum.TextXAlignment.Left
+Subtitle.Parent            = Header
+
+-- CLOSE BUTTON --------------------------------------------------------------
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size               = UDim2.fromOffset(36, 36)
+CloseBtn.Position           = UDim2.new(1, -52, 0, 22)
+CloseBtn.BackgroundColor3   = Color3.fromRGB(46, 22, 32)
+CloseBtn.Text               = "×"
+CloseBtn.Font               = Enum.Font.GothamBold
+CloseBtn.TextSize           = 24
+CloseBtn.TextColor3         = Color3.fromRGB(255, 150, 175)
+CloseBtn.AutoButtonColor    = false
+CloseBtn.Parent             = Header
+local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0, 9); cc.Parent = CloseBtn
+local cs = Instance.new("UIStroke"); cs.Color = Color3.fromRGB(140, 40, 70); cs.Transparency = 0.4; cs.Parent = CloseBtn
+
+CloseBtn.MouseEnter:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(200, 40, 70) }):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255,255,255) }):Play()
+end)
+CloseBtn.MouseLeave:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(46, 22, 32) }):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255, 150, 175) }):Play()
+end)
+
+-- LIST ----------------------------------------------------------------------
+local List = Instance.new("ScrollingFrame")
+List.Size                  = UDim2.new(1, -32, 1, -140)
+List.Position              = UDim2.fromOffset(16, 92)
+List.BackgroundTransparency = 1
+List.BorderSizePixel       = 0
+List.ScrollBarThickness    = 4
+List.ScrollBarImageColor3  = Color3.fromRGB(200, 40, 70)
+List.CanvasSize            = UDim2.new(0, 0, 0, 0)
+List.AutomaticCanvasSize   = Enum.AutomaticSize.Y
+List.Parent                = Main
+
+local LL = Instance.new("UIListLayout")
+LL.Padding    = UDim.new(0, 10)
+LL.SortOrder  = Enum.SortOrder.LayoutOrder
+LL.Parent     = List
+
+-- FOOTER --------------------------------------------------------------------
+local Footer = Instance.new("TextLabel")
+Footer.Text              = "⚠ Not verified by rscripts.net — use at your own risk"
+Footer.Font              = Enum.Font.Gotham
+Footer.TextSize          = 11
+Footer.TextColor3        = Color3.fromRGB(120, 100, 125)
+Footer.BackgroundTransparency = 1
+Footer.Position          = UDim2.new(0, 0, 1, -30)
+Footer.Size              = UDim2.new(1, 0, 0, 18)
+Footer.Parent            = Main
+
+-- HELPERS -------------------------------------------------------------------
+local closed = false
+local loading = false
+
+local function closeHub()
+    if closed then return end
+    closed = true
+    TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        { Size = UDim2.fromOffset(380, 260), BackgroundTransparency = 1 }):Play()
+    TweenService:Create(MainStroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
+    TweenService:Create(Overlay, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(blur, TweenInfo.new(0.25), { Size = 0 }):Play()
+    task.delay(0.3, function()
+        blur:Destroy()
+        ScreenGui:Destroy()
+    end)
+end
+
+CloseBtn.MouseButton1Click:Connect(closeHub)
+
+-- DRAG ----------------------------------------------------------------------
+local dragging, dragInput, dragStart, startPos
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging  = true
+        dragStart = input.Position
+        startPos  = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+Header.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- CARD FACTORY --------------------------------------------------------------
+local function createCard(info, order)
+    local Card = Instance.new("Frame")
+    Card.Size              = UDim2.new(1, -6, 0, 78)
+    Card.BackgroundColor3  = Color3.fromRGB(30, 21, 36)
+    Card.BorderSizePixel   = 0
+    Card.LayoutOrder       = order
+    Card.Parent            = List
+    local cc2 = Instance.new("UICorner"); cc2.CornerRadius = UDim.new(0, 12); cc2.Parent = Card
+
+    local CardStroke = Instance.new("UIStroke")
+    CardStroke.Color         = Color3.fromRGB(80, 50, 70)
+    CardStroke.Thickness     = 1
+    CardStroke.Transparency  = 0.4
+    CardStroke.Parent        = Card
+
+    -- Accent bar
+    local Accent = Instance.new("Frame")
+    Accent.Size             = UDim2.new(0, 4, 1, -20)
+    Accent.Position         = UDim2.fromOffset(10, 10)
+    Accent.BackgroundColor3 = info.accent
+    Accent.BorderSizePixel  = 0
+    Accent.Parent           = Card
+    local ac = Instance.new("UICorner"); ac.CornerRadius = UDim.new(1, 0); ac.Parent = Accent
+
+    -- Name
+    local Name = Instance.new("TextLabel")
+    Name.Text              = info.label
+    Name.Font              = Enum.Font.GothamBold
+    Name.TextSize          = 19
+    Name.TextColor3        = Color3.fromRGB(250, 240, 250)
+    Name.BackgroundTransparency = 1
+    Name.TextXAlignment    = Enum.TextXAlignment.Left
+    Name.Position          = UDim2.fromOffset(26, 14)
+    Name.Size              = UDim2.new(0.65, 0, 0, 24)
+    Name.Parent            = Card
+
+    -- Description
+    local Desc = Instance.new("TextLabel")
+    Desc.Text              = info.sub
+    Desc.Font              = Enum.Font.Gotham
+    Desc.TextSize          = 13
+    Desc.TextColor3        = Color3.fromRGB(155, 135, 160)
+    Desc.BackgroundTransparency = 1
+    Desc.TextXAlignment    = Enum.TextXAlignment.Left
+    Desc.Position          = UDim2.fromOffset(26, 42)
+    Desc.Size              = UDim2.new(0.65, 0, 0, 20)
+    Desc.Parent            = Card
+
+    -- Tag badge
+    local Tag = Instance.new("Frame")
+    Tag.Size                = UDim2.fromOffset(78, 24)
+    Tag.Position            = UDim2.new(1, -90, 0.5, -12)
+    Tag.BackgroundColor3    = info.accent
+    Tag.BackgroundTransparency = 0.85
+    Tag.BorderSizePixel     = 0
+    Tag.Parent              = Card
+    local tcg = Instance.new("UICorner"); tcg.CornerRadius = UDim.new(0, 6); tcg.Parent = Tag
+    local ts  = Instance.new("UIStroke"); ts.Color = info.accent; ts.Transparency = 0.4; ts.Parent = Tag
+    local TagLabel = Instance.new("TextLabel")
+    TagLabel.Text              = info.tag
+    TagLabel.Font              = Enum.Font.GothamBold
+    TagLabel.TextSize          = 11
+    TagLabel.TextColor3        = info.accent
+    TagLabel.BackgroundTransparency = 1
+    TagLabel.Size              = UDim2.fromScale(1, 1)
+    TagLabel.Parent            = Tag
+
+    -- Click layer
+    local Btn = Instance.new("TextButton")
+    Btn.Size               = UDim2.fromScale(1, 1)
+    Btn.BackgroundTransparency = 1
+    Btn.Text               = ""
+    Btn.AutoButtonColor    = false
+    Btn.Parent             = Card
+
+    -- Hover
+    Btn.MouseEnter:Connect(function()
+        TweenService:Create(Card, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(48, 30, 56) }):Play()
+        TweenService:Create(CardStroke, TweenInfo.new(0.15), { Color = info.accent, Transparency = 0 }):Play()
+    end)
+    Btn.MouseLeave:Connect(function()
+        TweenService:Create(Card, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(30, 21, 36) }):Play()
+        TweenService:Create(CardStroke, TweenInfo.new(0.15), { Color = Color3.fromRGB(80, 50, 70), Transparency = 0.4 }):Play()
+    end)
+
+    -- Click → launch
+    Btn.MouseButton1Click:Connect(function()
+        if loading or closed then return end
+        loading = true
+        Name.Text        = "▶ Launching " .. info.label .. "..."
+        Name.TextColor3  = info.accent
+        TweenService:Create(CardStroke, TweenInfo.new(0.2), { Color = info.accent, Transparency = 0 }):Play()
+        TweenService:Create(Card, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(60, 34, 66) }):Play()
+
+        task.wait(0.4)
+        closeHub()
+        task.wait(0.35)
+
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet(info.url))()
+        end)
+        if not ok then
+            warn("[Misty Dany Hub] Failed to load " .. info.label .. ": " .. tostring(err))
+        end
+    end)
+
+    return Card
+end
+
+-- BUILD CARDS ---------------------------------------------------------------
+for i, info in ipairs(CONFIG.Versions) do
+    createCard(info, i)
+end
+
+-- INTRO ANIMATION -----------------------------------------------------------
+TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+    { Size = UDim2.fromOffset(560, 520) }):Play()
+
+task.delay(0.05, function()
+    TweenService:Create(MainStroke, TweenInfo.new(0.6), { Transparency = 0.15 }):Play()
+end)
