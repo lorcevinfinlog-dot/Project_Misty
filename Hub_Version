@@ -26,7 +26,8 @@ local CoreGui = game:GetService("CoreGui")
 
 -- ─── CONFIG ────────────────────────────────────────────────────
 local KEY_CONFIG = {
-    KEY_PAGE_URL   = "https://lorcevinfinlog-dot.github.io/keyesgived/key.html",
+    -- ТЕПЕРЬ ССЫЛКА ВЕДЁТ НА raw.txt (чистый текст без HTML)
+    KEY_PAGE_URL   = "https://lorcevinfinlog-dot.github.io/keyesgived/raw.txt",
     GetKeyURL      = "https://lootdest.org/s?BSEkyrKI",
     SaveFile       = "MistyDany_key.txt",
     DurationHours  = 48,
@@ -156,15 +157,16 @@ local function validateKey(key)
     if key == __D("", 167) then return false end
     if __isVIPKey(key) then return true end
 
-    local ok, html = pcall(function()
+    local ok, raw = pcall(function()
         return game:HttpGet(KEY_CONFIG.KEY_PAGE_URL .. "?t=" .. os.time(), true)
     end)
 
-    if ok and html then
-        local realKey = html:match("id=\"key\">(.-)<")
+    if ok and raw then
+        -- Читаем raw.txt напрямую (очищаем от пробелов и переносов строк)
+        local realKey = raw:match("^%s*(.-)%s*$")
         if realKey and normalize(realKey) == key then return true end
     else
-        warn("[Misty] Не удалось загрузить страницу с ключом!")
+        warn("[Misty] Не удалось загрузить файл с ключом!")
     end
     return false
 end
